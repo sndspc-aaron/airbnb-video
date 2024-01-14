@@ -4,7 +4,6 @@ import { useCallback, useMemo } from "react";
 import { toast } from "react-hot-toast";
 
 import { User } from "@prisma/client";
-
 import useLoginModal from "./useLoginModal";
 
 interface IUseFavorite {
@@ -12,55 +11,44 @@ interface IUseFavorite {
   currentUser?: User | null;
 }
 
-const useFavorite = ({
-  listingId,
-  currentUser
-}: IUseFavorite) => {
+const useFavorite = ({ listingId, currentUser }: IUseFavorite) => {
   const router = useRouter();
   const loginModal = useLoginModal();
 
+  // useMemo is used here for optimization
   const hasFavorited = useMemo(() => {
-    const list = currentUser?.favoriteIds || [];
+    // Ensure favoriteIds is an array before using it
+    const favoriteIds = Array.isArray(currentUser?.favoriteIds)
+      ? currentUser.favoriteIds
+      : [];
 
-    return list.includes(listingId);
-  }, [currentUser, listingId])
+    return favoriteIds.includes(listingId);
+  }, [currentUser, listingId]);
 
-  const toggleFavorite = useCallback(async (
-    e: React.MouseEvent<HTMLDivElement>
-  ) => {
+  const toggleFavorite = useCallback(async (e: React.MouseEvent<HTMLDivElement>) => {
     e.stopPropagation();
 
-    if(!currentUser) {
-      return loginModal.onOpen();
+    if (!currentUser) {
+      loginModal.onOpen();
+      return;
     }
 
     try {
-      let request;
+      const endpoint = `/api/favorites/${listingId}`;
+      const method = hasFavorited ? 'delete' : 'post';
+      await axios[method](endpoint);
 
-      if (hasFavorited) {
-        request = () => axios.delete(`/api/favorites/${listingId}`)
-      } else {
-        request = () => axios.post(`/api/favorites/${listingId}`)
-      }
-
-      await request();
-      router.refresh();
       toast.success('Success');
+      router.refresh();
     } catch (error) {
-      toast.error('Something went wrong')
+      toast.error('Something went wrong');
     }
-  }, [
-    currentUser,
-    hasFavorited,
-    listingId,
-    loginModal,
-    router
-  ]);
+  }, [currentUser, hasFavorited, listingId, loginModal, router]);
 
   return {
     hasFavorited,
-    toggleFavorite
-  }
-}
+    toggleFavorite,
+  };
+};
 
 export default useFavorite;
