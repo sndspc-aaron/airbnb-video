@@ -4,7 +4,7 @@ import Heading from "../components/Heading";
 import ListingCard from "../components/listings/ListingCard";
 
 interface FavoritesClientProps {
-  listings: Listing;
+  listings: Listing[];
   currentUser?: User | null;
 }
 
